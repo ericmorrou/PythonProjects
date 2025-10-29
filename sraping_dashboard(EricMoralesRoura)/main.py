@@ -1,48 +1,53 @@
-import requests
-from bs4 import BeautifulSoup
+import streamlit as st
 import pandas as pd
-from pandas import DataFrame
+import altair as alt
 
-base_url = "https://books.toscrape.com/catalogue/page-{}.html"
+st.set_page_config(page_title="Dashboard de Libros", layout="wide")
+st.title("Tus Books que has escrapeao quillo 🐳💨")
+st.markdown("Aqui ehtan mirateloh!")
 
-# Creamos los arrays para guardar la info obtenida
-titles = []
-prices = []
-ratings = []
-availability = []
-links = []
+@st.cache_data
+def load_data():
+    df = pd.read_csv("data.csv")
+    return df
 
-for page in range(1, 11):
-    url = base_url.format(page)
-    response = requests.get(url)
-    response.encoding = "utf-8"
-    soup = BeautifulSoup(response.text, "html.parser")
+df = load_data()
 
-    books = soup.find_all("article", class_="product_pod")
+st.sidebar.header("Filtros")
+ratings = sorted(df["Rating"].unique())
+rating_filter = st.sidebar.multiselect("Selecciona uno o varios ratings:", options=ratings, default=ratings)
+min_price = float(df["Precio"].min())
+max_price = float(df["Precio"].max())
+price_range = st.sidebar.slider("Selecciona un rango de precios (£):", min_value=min_price, max_value=max_price, value=(min_price, max_price))
 
-    for book in books:
-        title = book.h3.a["title"]
+filtered_df = df[(df["Rating"].isin(rating_filter)) & (df["Precio"].between(price_range[0], price_range[1]))]
 
-        price_text = book.find("p", class_="price_color").text
-        price_clean = price_text.replace("£", "").replace("Â", "")
-        price = float(price_clean)
+st.subheader("Datos filtrados")
+st.dataframe(filtered_df, use_container_width=True)
 
-        rating = book.p["class"][1]
-        avail = book.find("p", class_="instock availability").text.strip()
-        link = "https://books.toscrape.com/catalogue/" + book.h3.a["href"]
+st.subheader("Distribución de precios por rating")
+chart = (
+    alt.Chart(filtered_df)
+    .mark_bar()
+    .encode(
+        x=alt.X("Precio", bin=alt.Bin(maxbins=20), title="Precio (£)"),
+        y="count()",
+        color="Rating:N",
+        tooltip=["count()", "Rating:N"]
+    )
+    .interactive()
+)
+st.altair_chart(chart, use_container_width=True)
 
-        titles.append(title)
-        prices.append(price)
-        ratings.append(rating)
-        availability.append(avail)
-        links.append(link)
+st.subheader("Precio promedio por Rating")
+avg_price = (
+    filtered_df.groupby("Rating")["Precio"]
+    .mean()
+    .reset_index()
+    .sort_values("Precio", ascending=False)
+)
+st.bar_chart(avg_price.set_index("Rating"))
 
-df = pd.DataFrame({
-    "Titulo": titles,
-    "Precio": prices,
-    "Rating": ratings,
-    "Disponibilidad": availability,
-    "Enlaces": links
-})
-
-df.to_csv("data.csv")
+st.sidebar.markdown("Descargar datos filtrados")
+csv = filtered_df.to_csv(index=False).encode('utf-8')
+st.sidebar.download_button(label="Descargar CSV filtrado", data=csv, file_name="libros_filtrados.csv", mime="text/csv")
