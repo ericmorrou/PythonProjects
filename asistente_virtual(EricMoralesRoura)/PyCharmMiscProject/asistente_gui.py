@@ -42,10 +42,10 @@ def obtener_respuesta():
         salida.insert(tk.END, f"Asistente: {texto_respuesta}\n\n", "asistente")
 
     except Exception as e:
-        salida.insert(tk.END, f"⚠️ Error al obtener respuesta: {e}\n\n")
+        salida.insert(tk.END, f"Error al obtener respuesta: {e}\n\n")
 
 ventana = tk.Tk()
-ventana.title("💇‍♀️ Asistente Virtual - Peluquería Belleza Total")
+ventana.title("Asistente Virtual - Peluquería Belleza Total")
 ventana.geometry("1200x600")
 ventana.configure(bg="#292929")
 
@@ -64,3 +64,4 @@ boton = tk.Button(ventana, text="Enviar", command=obtener_respuesta, bg="#ff9124
 boton.pack(pady=5)
 
 ventana.mainloop()
+
