@@ -1,12 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-
 import os
 
 app = Flask(__name__)
-basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, 'instance', 'games.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
+
+# Forzamos memoria temporal para evitar problemas de permisos con el nombre de esta carpeta
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -28,7 +27,7 @@ class VideoGame(db.Model):
             'genre': self.genre
         }
 
-# Data initialization
+# Inicializamos la base de datos (se crearán las tablas en memoria)
 with app.app_context():
     db.create_all()
 
